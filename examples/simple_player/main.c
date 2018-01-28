@@ -18,6 +18,8 @@
 	#include <libgen.h>		/* for dirname() */
 #endif
 
+#include <getopt.h>
+
 void *mallocReadFile(
 	const char *fileName,
 	uint32_t *sizeRet
@@ -66,16 +68,33 @@ main(
 	int		argc
 ,	char	**argv
 ){
+
+	int sdlAudioBufferSize = 2048;
+	// オプション処理
+	int opt = 0;
+	while (1) {
+		opt = getopt(argc, argv, "x:");
+		if (opt == -1) break;
+		switch(opt) {
+			case 'x':
+				sdlAudioBufferSize = atoi(optarg);
+			break;
+		}
+	}
+
 	/* 引数解析 */
-	if (argc == 1) {
+  if (argc == 1 || argc <= optind) {
 		printf(
 			"simple mdx player\n"
-			"usage : %s mdxfilename\n",
-			argv[0]
+			"usage : %s [options...] mdxfilename\n"
+			"\n"
+			" options\n"
+			"    -x[buffer size] buffer size of SDL Audio\n"
+			, argv[0]
 		);
 		exit(EXIT_SUCCESS);
 	}
-	char *mdxFilePath = argv[1];
+	char *mdxFilePath = argv[optind];
 
 	/* MDX ファイルの読み込み */
 	uint32_t mdxFileImageSizeInBytes = 0;
@@ -245,6 +264,9 @@ main(
 	) / 1000.0f;
 	printf("songDuration %.1f(sec)\n", songDuration);
 
+	printf("sdlAudioBufferSize = %d\n",sdlAudioBufferSize);
+	fflush(stdout);
+
 	/* MDX 再生 */
 	MXDRV_Play(
 		&context,
@@ -280,7 +302,7 @@ main(
 		fmt.freq		= SAMPLES_PER_SEC;
 		fmt.format		= AUDIO_S16SYS;
 		fmt.channels	= 2;
-		fmt.samples		= 256;
+		fmt.samples		= sdlAudioBufferSize;
 		fmt.callback	= sdlAudioCallback;
 		fmt.userdata	= &context;
 		if (SDL_OpenAudio(&fmt, NULL) < 0) {
