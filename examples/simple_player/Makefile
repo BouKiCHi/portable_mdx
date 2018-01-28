@@ -17,8 +17,21 @@ else
 EXE_PREFIX =
 endif
 
-TARGET_FILE = $(TARGET)$(EXE_PREFIX)
+TARGET_SUFFIX =
+LDLAGS = 
 
+ifdef STATIC_BUILD_MINGW32
+LIBS = -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic 
+LIBS += -lmingw32
+LIBS += -lSDL2main -lSDL2 -mwindows
+LIBS += -static-libstdc++
+LIBS += -static-libgcc
+TARGET_SUFFIX = _static
+else
+LIBS = $(shell $(SDL2CONF) --libs)
+endif
+
+TARGET_FILE = $(TARGET)$(TARGET_SUFFIX)$(EXE_PREFIX)
 
 DIR_ROOT = ../..
 DIR_MXDRV = $(DIR_ROOT)/src/mxdrv
@@ -38,8 +51,6 @@ SRC_X68SOUND += x68sound_opm.cpp x68sound_pcm8.cpp x68sound.cpp x68sound_context
 SRC_UTIL = mdx_util.c
 SRC_MAIN = main.c
 
-LDLAGS = 
-LIBS = $(shell $(SDL2CONF) --libs)
 
 SRCS = $(addprefix $(DIR_MXDRV),$(SRC_MXDRV))
 SRCS += $(addprefix $(DIR_X68SOUND),$(SRC_X68SOUND))
@@ -53,7 +64,7 @@ OBJS_FILE += $(patsubst %.c,%.o,$(SRC_MAIN))
 
 OBJS = $(addprefix $(DIR_OBJS)/,$(OBJS_FILE))
 
-all : $(TARGET_DIR) $(TARGET)
+all : $(TARGET_DIR) $(TARGET_FILE)
 
 clean : 
 	rm -rf $(TARGET_DIR)
@@ -62,7 +73,7 @@ clean :
 $(TARGET_DIR) : 
 	mkdir -p $(TARGET_DIR)
 
-$(TARGET) : $(OBJS)
+$(TARGET_FILE) : $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(STRIP) $(TARGET_FILE)
 
